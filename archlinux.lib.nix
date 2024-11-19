@@ -113,15 +113,50 @@ rec
       , package  # A single package desc
       , _seen ? [] # Used internally to prevent infrec by keeping a tally of seen packages
       }:
+
+      # From: PKGBUILD(5)
+      # > depends (array)
+      # >     An array of packages this package depends on to run. 
+      # >     Entries in this list should be surrounded with single 
+      # >     quotes and contain at least the package name. Entries can 
+      # >     also include a version requirement of the form 
+      # >     name<>version, where <> is one of five comparisons: >= 
+      # >     (greater than or equal to), <= (less than or equal to), = 
+      # >     (equal to), > (greater than), or < (less than).
+      # >
+      # >     If the dependency name appears to be a library (ends with 
+      # >     .so), makepkg will try to find a binary that depends on the 
+      # >     library in the built package and append the version needed 
+      # >     by the binary. Appending the version yourself disables 
+      # >     automatic detection.
+      # >
+      # >     Additional architecture-specific depends can be added by 
+      # >     appending an underscore and the architecture name e.g., 
+      # >     depends_x86_64=().
+      let
+        compOperators = [
+          ">="  # (greater than or equal to)
+          "<="  # (less than or equal to)
+          "="   # (equal to)
+          ">"   # (greater than)
+          "<"   # (less than)
+        ];
+        parseDep = builtins.match "^([^><=]+)[><=]*(.*)$";
+      in
       compact (
         builtins.map (depName:
+          let
+            parsed = parseDep depName;
+            parsedDepName = builtins.head parsed;
+            parsedDepPayload = builtins.tail parsed;
+          in
           # Skips over packages already handled
-          if builtins.elem depName _seen then null else
+          if builtins.elem parsedDepName _seen then null else
 
           # Is that dep in the packages set?
-          if packages ? "${depName}"
-          then packages."${depName}"
-          else (builtins.trace "WARNING: missing dep ${depName}... skipping it even though we shouldn't!" null)
+          if packages ? "${parsedDepName}"
+          then packages."${parsedDepName}"
+          else (builtins.trace "WARNING: missing dep ${parsedDepName}... skipping it even though we shouldn't!" null)
         ) (if package ? DEPENDS then package.DEPENDS else [])
       )
     ;
