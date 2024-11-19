@@ -27,6 +27,52 @@ rec
     []
   ;
 
+  mergeDeep' = mergeOperations: first: second:
+    first // second //
+    (
+      let
+        common = builtins.intersectAttrs first second;
+      in
+      builtins.mapAttrs (
+        name: value:
+        let
+          first' = first."${name}";
+          second' = second."${name}";
+          mergeOp = "${builtins.typeOf first'}+${builtins.typeOf second'}";
+        in
+        if mergeOperations ? "${mergeOp}"
+        then (mergeOperations."${mergeOp}" mergeOperations first' second')
+        else second'
+      ) common
+    )
+  ;
+
+  mergeOps' = {
+    deep = {
+      "set+set" =
+        selfOps: mergeDeep' selfOps
+      ;
+    };
+    shallow = {
+      "set+set" =
+        _: a: b: (a // b)
+      ;
+      # Shallow list+list
+      "list+list" =
+        _: a: b: a ++ b
+      ;
+    };
+  };
+
+  mergeAttrsDeep = mergeDeep' {
+    "set+set" = mergeOps'.deep."set+set";
+  };
+
+  mergeAttrsDeepAndListsShallow = mergeDeep' {
+    "set+set" = mergeOps'.deep."set+set";
+    "list+list" = mergeOps'.shallow."list+list";
+  };
+
   #
   # ArchLinux formats parsing
   #
