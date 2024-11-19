@@ -137,20 +137,69 @@ rec
     parse = desc: KVListsToAttrs (KVListToKVLists (dbToKVList desc));
 
     # db.all ./path/to/unpacked/repo.db
-    all =
-      dir:
-      builtins.listToAttrs (builtins.attrValues (
-        builtins.mapAttrs (path: _type:
-          let
-            value = db.parse (builtins.readFile (dir + "/${path}/desc"));
-          in
-          {
-            inherit value;
-            name = builtins.head value."NAME";
-          }
-        )
-        (builtins.readDir dir)
-      ))
+    all = dir:
+      let
+        packagesAttrs =
+          builtins.listToAttrs (builtins.attrValues (
+            builtins.mapAttrs (path: _type:
+              let
+                value = db.parse (builtins.readFile (dir + "/${path}/desc"));
+              in
+              {
+                inherit value;
+                name = builtins.head value."NAME";
+              }
+            )
+            (builtins.readDir dir)
+          ))
+        ;
+        packages = builtins.attrValues packagesAttrs;
+      in
+      {
+        # This lets us attach a bit more data.
+        "$db" = {
+          "provides" =
+            let
+              nameOnly = entry: builtins.head (builtins.match "([^=]+).*" entry);
+              # NOTE: This is losing the versioning information...
+              #       This is *okay* since the use-case is to automatically cast
+              #       a wide net around packages to fetch for using in the sandbox.
+              list =
+                flatten
+                (builtins.map (package:
+                  if !(package ? PROVIDES) then [] else
+                  builtins.map
+                  (provider: { name = nameOnly provider; value = builtins.head package.NAME; })
+                  package.PROVIDES
+                ) packages)
+              ;
+            in
+            builtins.mapAttrs
+            (provide: entries: builtins.map (entry: entry.value) entries)
+            (builtins.groupBy (entry:
+              entry.name
+            ) list)
+          ;
+        };
+      } // packagesAttrs
+    ;
+
+    # Given a list of `db.all` output, merge them appropriately.
+    merge =
+      builtins.foldl'
+      (coll: curr:
+        # We do NOT want to merge those deep.
+        # Any repository defined after has priority for a same-name package.
+        # TODO: verify this assumption is correct.
+        coll //
+        curr //
+        {
+          "$db" = mergeAttrsDeepAndListsShallow coll."$db" curr."$db";
+        }
+      )
+      {
+        "$db".provides = {};
+      }
     ;
 
     # Given a package set, and a package description, returns a list of package descriptions it directly depends on.
@@ -199,10 +248,25 @@ rec
           # Skips over packages already handled
           if builtins.elem parsedDepName _seen then null else
 
+          # NOTE: This is losing the versioning information...
+          #       This is *okay* since the use-case is to automatically cast
+          #       a wide net around packages to fetch for using in the sandbox.
+
           # Is that dep in the packages set?
           if packages ? "${parsedDepName}"
           then packages."${parsedDepName}"
-          else (builtins.trace "WARNING: missing dep ${parsedDepName}... skipping it even though we shouldn't!" null)
+          else
+
+          # Is that dep in the provides set?
+          if packages."$db"."provides" ? ${parsedDepName}
+          then (/* NOTE: incomplete semantics. Only picks whatever is first in the list. */
+            let
+              name = builtins.head packages."$db"."provides"."${parsedDepName}";
+            in
+            packages."${name}"
+          )
+          else
+          (builtins.trace "WARNING: missing dep ${parsedDepName}... skipping it even though we shouldn't!" null)
         ) (if package ? DEPENDS then package.DEPENDS else [])
       )
     ;
