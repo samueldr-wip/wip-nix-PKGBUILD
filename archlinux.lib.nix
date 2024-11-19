@@ -136,21 +136,26 @@ rec
     # db.parse (builtins.readFile file)
     parse = desc: KVListsToAttrs (KVListToKVLists (dbToKVList desc));
 
-    # db.all ./path/to/unpacked/repo.db
-    all = dir:
+    # db.all {
+    #   path = ./path/to/unpacked/reponame;
+    #   /* defaults to the basename of the target path */ repo = "reponame";
+    # }
+    all = { path, repo ? builtins.baseNameOf path }:
       let
         packagesAttrs =
           builtins.listToAttrs (builtins.attrValues (
-            builtins.mapAttrs (path: _type:
+            builtins.mapAttrs (packagePath: _type:
               let
-                value = db.parse (builtins.readFile (dir + "/${path}/desc"));
+                value = db.parse (builtins.readFile (path + "/${packagePath}/desc"));
               in
               {
-                inherit value;
+                value = value // {
+                  "$repo" = repo;
+                };
                 name = builtins.head value."NAME";
               }
             )
-            (builtins.readDir dir)
+            (builtins.readDir path)
           ))
         ;
         packages = builtins.attrValues packagesAttrs;
@@ -308,7 +313,7 @@ rec
   repo = {
     fetchPackage =
       { desc
-      , repo
+      , repo ? desc."$repo"
       , arch ? builtins.head (builtins.match "^([^-]+)-.*" builtins.currentSystem)
       }:
 
