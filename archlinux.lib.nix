@@ -89,6 +89,7 @@ rec
   db = {
     # db.parse (builtins.readFile file)
     parse = desc: KVListsToAttrs (KVListToKVLists (dbToKVList desc));
+
     # db.all ./path/to/unpacked/repo.db
     all =
       dir:
@@ -105,6 +106,8 @@ rec
         (builtins.readDir dir)
       ))
     ;
+
+    # Given a package set, and a package description, returns a list of package descriptions it directly depends on.
     depsForPackage =
       { packages # Output from e.g. `db.all`
       , package  # A single package desc
@@ -122,6 +125,8 @@ rec
         ) (if package ? DEPENDS then package.DEPENDS else [])
       )
     ;
+
+    # Given a package set, and a package description, returns a list of all package descriptions it depends on.
     allDepsForPackage =
       { packages # Output from e.g. `db.all`
       , package  # A single package desc
@@ -139,6 +144,8 @@ rec
         )
     ;
 
+    # Given a package set, and a list of package names, returns a list of package descriptions the packages depends on.
+    # This is useful to describe a set of packages as a list of names
     allDepsForPackageNames =
       { packages # Output from e.g. `db.all`
       , names    # List of package names to resolved dependencies for
