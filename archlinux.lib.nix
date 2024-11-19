@@ -10,6 +10,23 @@ rec
   # Strips the given chars from the start and end of the string.
   strip = char: builtins.match "^${char}*(.*[^${char}])?${char}+$";
 
+  # Flattens one level of lists
+  flatten = builtins.foldl' (fin: attr: fin ++ attr) [];
+
+  # Removes nulls from a list
+  compact = builtins.filter (i: i != null);
+
+  # Keeps only unique elements from a list
+  unique =
+    builtins.foldl'
+    (ret: curr:
+      if builtins.elem curr ret
+      then ret
+      else (ret ++ [curr])
+    )
+    []
+  ;
+
   #
   # ArchLinux formats parsing
   #
@@ -72,5 +89,86 @@ rec
   db = {
     # db.parse (builtins.readFile file)
     parse = desc: KVListsToAttrs (KVListToKVLists (dbToKVList desc));
+    # db.all ./path/to/unpacked/repo.db
+    all =
+      dir:
+      builtins.listToAttrs (builtins.attrValues (
+        builtins.mapAttrs (path: _type:
+          let
+            value = db.parse (builtins.readFile (dir + "/${path}/desc"));
+          in
+          {
+            inherit value;
+            name = builtins.head value."NAME";
+          }
+        )
+        (builtins.readDir dir)
+      ))
+    ;
+    depsForPackage =
+      { packages # Output from e.g. `db.all`
+      , package  # A single package desc
+      , _seen ? [] # Used internally to prevent infrec by keeping a tally of seen packages
+      }:
+      compact (
+        builtins.map (depName:
+          # Skips over packages already handled
+          if builtins.elem depName _seen then null else
+
+          # Is that dep in the packages set?
+          if packages ? "${depName}"
+          then packages."${depName}"
+          else (builtins.trace "WARNING: missing dep ${depName}... skipping it even though we shouldn't!" null)
+        ) (if package ? DEPENDS then package.DEPENDS else [])
+      )
+    ;
+    allDepsForPackage =
+      { packages # Output from e.g. `db.all`
+      , package  # A single package desc
+      , _seen ? [] # Used internally to prevent infrec by keeping a tally of seen packages
+      }:
+      let
+        selfDeps = db.depsForPackage { inherit packages package _seen; };
+        prev_seen = _seen;
+      in
+      let
+        _seen = prev_seen ++ (flatten (builtins.map (p: p.NAME) selfDeps));
+      in
+        unique (
+          selfDeps ++ (flatten (builtins.map (package: db.allDepsForPackage { inherit packages package _seen; }) selfDeps))
+        )
+    ;
+
+    allDepsForPackageNames =
+      { packages # Output from e.g. `db.all`
+      , names    # List of package names to resolved dependencies for
+      }:
+      db.allDepsForPackage {
+        inherit packages;
+        # Synthetic package desc
+        package = {
+          DEPENDS = names;
+        };
+      }
+    ;
+  };
+
+  repo = {
+    fetchPackage =
+      { desc
+      , repo
+      , arch ? builtins.head (builtins.match "^([^-]+)-.*" builtins.currentSystem)
+      }:
+
+      let
+        h = builtins.head;
+        filename = h desc.FILENAME;
+        sha256 = h desc.SHA256SUM;
+      in
+      builtins.fetchurl {
+        url = "https://geo.mirror.pkgbuild.com/${repo}/os/${arch}/${filename}";
+        inherit sha256;
+      }
+    ;
   };
 }
