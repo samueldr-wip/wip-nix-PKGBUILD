@@ -13,6 +13,9 @@ rec
   # Flattens one level of lists
   flatten = builtins.foldl' (fin: attr: fin ++ attr) [];
 
+  # Reverses a list
+  reverse = builtins.foldl' (coll: item: [item] ++ coll) [];
+
   # Removes nulls from a list
   compact = builtins.filter (i: i != null);
 
