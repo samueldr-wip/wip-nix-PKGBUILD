@@ -7,6 +7,9 @@ rec
   # Generic helpers
   #
 
+  # Identity function (it is the identity function).
+  identity = x: x;
+
   # Strips the given chars from the start and end of the string.
   strip = char: builtins.match "^${char}*(.*[^${char}])?${char}+$";
 
