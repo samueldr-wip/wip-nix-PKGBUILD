@@ -317,8 +317,14 @@ rec
   };
 
   repo = {
+    repos = arch: {
+      core = "https://geo.mirror.pkgbuild.com/core/os/${arch}/";
+      extra = "https://geo.mirror.pkgbuild.com/extra/os/${arch}/";
+    };
     fetchPackage =
+      let _repos = repo.repos; in # Keep the right `repos` ref around to break infrec...
       { desc
+      , repos ? _repos
       , repo ? desc."$repo"
       , arch ? builtins.head (builtins.match "^([^-]+)-.*" builtins.currentSystem)
       }:
@@ -327,10 +333,15 @@ rec
         h = builtins.head;
         filename = h desc.FILENAME;
         sha256 = h desc.SHA256SUM;
+        storeEscape = builtins.replaceStrings [":"] ["__COLON__"];
       in
-      builtins.fetchurl {
-        url = "https://geo.mirror.pkgbuild.com/${repo}/os/${arch}/${filename}";
-        inherit sha256;
+      {
+        inherit filename;
+        file = (builtins.fetchurl {
+          name = storeEscape filename;
+          url = (repos arch)."${repo}" + filename;
+          inherit sha256;
+        });
       }
     ;
   };
