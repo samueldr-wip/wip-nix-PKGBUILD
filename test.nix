@@ -12,15 +12,20 @@ derivation {
   inherit packageSource;
 
   archiveUnpacker =
+    ''
+      set -e
+    '' + (
     builtins.concatStringsSep "\n"
     (
       builtins.map (
         { filename, file }:
-        ''
-          zstdcat ${file} | tar -x
-          cat ${file} > var/cache/pacman/pkg/${filename}
-        ''
-      ) basePackageSet
+          ''
+            echo ":: Unpacking ${filename}..."
+            bsdtar -x -f ${file}
+            cat ${file} > var/cache/pacman/pkg/${filename}
+          ''
+        ) basePackageSet
+      )
     )
   ;
 
