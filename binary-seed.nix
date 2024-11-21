@@ -42,6 +42,7 @@ let
         runCommand "arch-nix-binary-seed" {
           seed = [
             pkgsStatic.busybox
+            pkgsStatic.bubblewrap
             pkgsStatic.zstd
           ];
         } ''
