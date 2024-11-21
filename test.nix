@@ -1,5 +1,6 @@
 { seed
 , basePackageSet
+, packageSource
 }:
 
 derivation {
@@ -7,6 +8,8 @@ derivation {
   system = "x86_64-linux";
   builder = "${seed}/bin/ash";
   PATH = "${seed}/bin/";
+
+  inherit packageSource;
 
   archiveUnpacker =
     builtins.concatStringsSep "\n"
@@ -131,12 +134,32 @@ derivation {
           exit 2
         fi
 
+        _banner "Building a package"
+
+        # TODO: find a solution not requiring this workaround...
+        echo "Applying a workaround in makepkg..."
         (
-        echo "Package list:"
-        _chrooted pacman -Q
-        echo ""
-        cat root/etc/passwd
-        ) > $out
+        set -x
+        sed -i "s;\bEUID\b;XEUID;" root/usr/bin/makepkg
+        )
+
+        (
+        ARGS=""
+        ARGS="$ARGS --bind     $PWD/root    /"
+        ARGS="$ARGS --bind     /proc        /proc"
+        ARGS="$ARGS --dev-bind /dev         /dev"
+        ARGS="$ARGS --tmpfs                 /build"
+        # Prevent leaks...
+        ARGS="$ARGS --tmpfs                 /nix"
+        export XEUID=1000
+        set -x
+        mkdir -p root/package
+        tar --strip-components 1 -C root/package/ -xf "$packageSource"
+        bwrap $ARGS -- /usr/bin/sh -c "export PATH='/usr/bin/'; set -x; cd /package; makepkg"
+        )
+
+        mkdir -p $out
+        cp -v -t $out/ root/package/*.pkg.tar*
       '')
     ]
   ;
