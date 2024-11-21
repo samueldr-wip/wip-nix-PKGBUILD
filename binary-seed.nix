@@ -43,7 +43,7 @@ let
           seed = [
             pkgsStatic.busybox
             pkgsStatic.bubblewrap
-            pkgsStatic.zstd
+            pkgsStatic.libarchive
           ];
         } ''
           (PS4=" $ "
