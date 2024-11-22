@@ -51,15 +51,36 @@ derivation {
         sh "''$archiveUnpackerPath"
         )
 
+        __bwrap() {
+          ARGS=""
+          ARGS="$ARGS --unshare-all"
+          ARGS="$ARGS --chdir ''${CHROOTED_INITDIR:-/}"
+
+          ARGS="$ARGS --bind     $PWD/root    /"
+          ARGS="$ARGS --proc                  /proc"
+          ARGS="$ARGS --dev-bind /dev         /dev"
+          ARGS="$ARGS --tmpfs                 /build"
+          # Prevent leaks...
+          ARGS="$ARGS --tmpfs                 /nix"
+          ARGS="$ARGS ''${BWRAP_ADDITIONAL_ARGS:-}"
+
+          (
+          set -x
+          bwrap $ARGS "$@"
+          )
+        }
+
+        _bwrap_user() {
+            __bwrap -- /usr/bin/env -i PATH="/usr/bin/" "$@"
+        }
+        _bwrap_root() {
+            __bwrap --uid 0 --gid 0 -- /usr/bin/env -i PATH="/usr/bin/" "$@"
+        }
+
         # Runs a command in the chrooted environment.
         # Safely(?) handles arguments.
         _chrooted() {
-          unshare \
-            --user \
-            --map-root-user \
-            --mount \
-            env -i $(which chroot) "$(pwd)/root" \
-              "$@"
+          _bwrap_root "$@"
         }
 
         # Helper that runs the passed arguments *hapazardly* through `sh`.
@@ -72,19 +93,10 @@ derivation {
 
         # Helper that handles calling args for pacman
         _pacman() {
-          ARGS="/usr/bin/pacman"
-          # NOTE: not sufficient, the sandbox user was still used...
-          ARGS="$ARGS --disable-sandbox "
-          ARGS="$ARGS --noprogressbar "
-          ARGS="$ARGS --nodeps "
-          ARGS="$ARGS --nodeps "
-          ARGS="$ARGS --noconfirm "
-          ARGS="$ARGS "'--overwrite \*'
+          # FIXME: sh-flavoured command execution needed to expand file list arguments.
           _chrooted_sh \
-            $ARGS "$@"
+            pacman --disable-sandbox --noprogressbar --nodeps --nodeps --noconfirm --overwrite '\*' "$@"
         }
-
-
 
         _banner "Applying some minor fixups"
 
@@ -99,10 +111,15 @@ derivation {
         # chown("/var/cache/pacman/pkg/download-XXXXXX", 973, 973) = -1 EINVAL (Invalid argument)
         #
         cat <<EOF >> root/etc/passwd
+        archbld:x:1000:1000:Builder user:/builder:/usr/bin/bash
         alpm:x:0:0:Arch Linux Package Management:/:/usr/bin/nologin
         EOF
         cat <<EOF >> root/etc/shadow
+        archbld:!*:3652::::::
         alpm:!*:3652::::::
+        EOF
+        cat <<EOF >> root/etc/group
+        users:x:100:
         EOF
         rm root/etc/mtab
         # Prevents pacman from pretending there's not enough free space...
@@ -145,22 +162,16 @@ derivation {
         echo "Applying a workaround in makepkg..."
         (
         set -x
-        sed -i "s;\bEUID\b;XEUID;" root/usr/bin/makepkg
+        sed -i "s;\bEUID\b;1;" root/usr/bin/makepkg
         )
 
+        echo ""
         (
-        ARGS=""
-        ARGS="$ARGS --bind     $PWD/root    /"
-        ARGS="$ARGS --bind     /proc        /proc"
-        ARGS="$ARGS --dev-bind /dev         /dev"
-        ARGS="$ARGS --tmpfs                 /build"
-        # Prevent leaks...
-        ARGS="$ARGS --tmpfs                 /nix"
-        export XEUID=1000
         set -x
         mkdir -p root/package
         tar --strip-components 1 -C root/package/ -xf "$packageSource"
-        bwrap $ARGS -- /usr/bin/sh -c "export PATH='/usr/bin/'; set -x; cd /package; makepkg"
+        CHROOTED_INITDIR="/package"
+        _chrooted makepkg
         )
 
         mkdir -p $out
