@@ -16,7 +16,7 @@ rec {
     reverse (builtins.map (desc: repo.fetchPackage { inherit desc; }) baseDevel)
   ;
 
-  test = import ./test.nix {
+  hello = import ./test.nix {
     inherit seed;
     basePackageSet = withPackages [ "base" "base-devel" ];
     packageSource = ./hello-2.12.1-2.src.tar.gz;
