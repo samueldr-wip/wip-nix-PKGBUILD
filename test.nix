@@ -64,9 +64,18 @@ derivation {
           ARGS="$ARGS --tmpfs                 /nix"
           ARGS="$ARGS ''${BWRAP_ADDITIONAL_ARGS:-}"
 
+          # Use strace's injection mechanisms to pretend all chown operations work.
+          SYSCALL_INTERCEPT=""
+          SYSCALL_INTERCEPT="$SYSCALL_INTERCEPT strace"
+          SYSCALL_INTERCEPT="$SYSCALL_INTERCEPT -o /dev/null"
+          SYSCALL_INTERCEPT="$SYSCALL_INTERCEPT --quiet=all"
+          SYSCALL_INTERCEPT="$SYSCALL_INTERCEPT --trace=/chown"
+          SYSCALL_INTERCEPT="$SYSCALL_INTERCEPT --inject=/chown:retval=0"
+          SYSCALL_INTERCEPT="$SYSCALL_INTERCEPT -f"
+
           (
           set -x
-          bwrap $ARGS "$@"
+          $SYSCALL_INTERCEPT bwrap $ARGS "$@"
           )
         }
 
