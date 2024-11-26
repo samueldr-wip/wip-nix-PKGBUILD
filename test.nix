@@ -40,9 +40,11 @@ derivation {
 
         _banner() {
           printf "\n:: %s\n\n" "$*"
+          # See `handleJSONLogMessage` in the Nix source.
+          printf "@nix { \"action\": \"setPhase\", \"phase\": \"%s\" }\n" "$@" >&"$NIX_LOG_FD"
         }
 
-        _banner "Extracting archives..."
+        _banner "Extracting packages"
 
         (
         set -x
@@ -107,7 +109,7 @@ derivation {
             pacman --disable-sandbox --noprogressbar --nodeps --nodeps --noconfirm --overwrite '\*' "$@"
         }
 
-        _banner "Applying some minor fixups"
+        _banner "Fixing-up temp root"
 
         (
         set -x
@@ -146,7 +148,7 @@ derivation {
         _chrooted repo-add "/var/lib/pacman/sync/core.db.tar.gz"
         _chrooted repo-add "/var/lib/pacman/sync/extra.db.tar.gz"
 
-        _banner "Refreshing the pacman database..."
+        _banner "Rehydrating pacman database"
 
         (
         echo "Rehydration!"
@@ -165,7 +167,7 @@ derivation {
           exit 2
         fi
 
-        _banner "Building a package"
+        _banner "Building $(basename ''${packageSource})"
 
         # TODO: find a solution not requiring this workaround...
         echo "Applying a workaround in makepkg..."
@@ -185,6 +187,7 @@ derivation {
 
         mkdir -p $out
         cp -v -t $out/ root/package/*.pkg.tar*
+
       '')
     ]
   ;
