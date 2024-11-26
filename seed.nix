@@ -4,6 +4,11 @@ let
   seed' = import ./binary-seed.nix {};
   # Round-trip the binary seed into a tarball to properly show we could
   # publish the tarball independent from Nixpkgs.
+  # NOTE: archive needs to be pre-built...
+  # ```
+  # nix-build ./binary-seed.nix -A archive
+  # ```
+  # TODO: figure out a way to use IFD instead?
   seed = builtins.fetchTarball {
     url = builtins.unsafeDiscardStringContext "file://${toString seed'.archive}";
   };
@@ -26,10 +31,6 @@ derivation {
         ( exec -a busybox $seed/bin/busybox mkdir -p $out/ )
         # Copy the files
         ( exec -a busybox $seed/bin/busybox cp -rf -t $out/ $seed/* )
-        # We copied read-only files...
-        ( exec -a busybox $seed/bin/busybox chmod -R +w $out/ )
-        # Ensure all applets are installed
-        ( exec -a busybox $seed/bin/busybox --install -s $out/bin )
       '')
     ]
   ;
