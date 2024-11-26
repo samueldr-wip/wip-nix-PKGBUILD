@@ -180,7 +180,7 @@ derivation {
         mkdir -p root/package
         tar --strip-components 1 -C root/package/ -xf "$packageSource"
         CHROOTED_INITDIR="/package"
-        _chrooted makepkg
+        _chrooted_sh 'export PAGER=cat; makepkg --skippgpcheck'
         )
 
         mkdir -p $out
