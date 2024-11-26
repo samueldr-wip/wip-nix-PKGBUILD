@@ -16,14 +16,16 @@ rec {
     reverse (builtins.map (desc: repo.fetchPackage { inherit desc; }) baseDevel)
   ;
 
-  hello = import ./test.nix {
-    inherit seed;
-    basePackageSet = withPackages [ "base" "base-devel" ];
-    packageSource = ./hello-2.12.1-2.src.tar.gz;
-  };
-  curl = import ./test.nix {
-    inherit seed;
-    basePackageSet = withPackages [ "base" "base-devel" "git" "patchelf" "valgrind" ];
-    packageSource = ./curl-8.11.0-3.src.tar.gz;
+  packages = {
+    hello = import ./test.nix {
+      inherit seed;
+      basePackageSet = withPackages [ "base" "base-devel" ];
+      packageSource = ./hello-2.12.1-2.src.tar.gz;
+    };
+    curl = import ./test.nix {
+      inherit seed;
+      basePackageSet = withPackages [ "base" "base-devel" "git" "patchelf" "valgrind" ];
+      packageSource = ./curl-8.11.0-3.src.tar.gz;
+    };
   };
 }
