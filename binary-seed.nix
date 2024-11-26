@@ -44,6 +44,7 @@ let
             pkgsStatic.busybox
             pkgsStatic.bubblewrap
             pkgsStatic.libarchive
+            pkgsStatic.strace
           ];
         } ''
           (PS4=" $ "
