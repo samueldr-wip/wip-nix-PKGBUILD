@@ -22,5 +22,10 @@ rec {
       basePackageSet = withPackages [ "base" "base-devel" ];
       packageSource = ./hello-2.12.1-2.src.tar.gz;
     };
+    grep = import ./test.nix {
+      inherit seed;
+      basePackageSet = withPackages [ "base" "base-devel" ];
+      packageSource = ./grep-3.11-1.src.tar.gz;
+    };
   };
 }
