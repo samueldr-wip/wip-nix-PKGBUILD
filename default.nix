@@ -5,6 +5,11 @@ rec {
       inherit seed;
   };
 
+  fetchSourcePackage = import ./builders/fetchSourcePackage.nix {
+      inherit seed;
+      basePackageSet = withPackages [ "base" "base-devel" ];
+  };
+
   basePackageSet = 
     with import ./archlinux.lib.tests.nix {};
     reverse (builtins.map (desc: repo.fetchPackage { inherit desc; }) basePackageAndDeps)
