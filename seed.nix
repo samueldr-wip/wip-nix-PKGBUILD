@@ -2,16 +2,27 @@
 
 let
   seed' = import ./binary-seed.nix {};
-  # Round-trip the binary seed into a tarball to properly show we could
-  # publish the tarball independent from Nixpkgs.
-  # NOTE: archive needs to be pre-built...
-  # ```
-  # nix-build ./binary-seed.nix -A archive
-  # ```
-  # TODO: figure out a way to use IFD instead?
-  seed = builtins.fetchTarball {
-    url = builtins.unsafeDiscardStringContext "file://${toString seed'.archive}";
-  };
+  checkTarballRoundtrip = false;
+  
+  seed =
+    if checkTarballRoundtrip then
+      #
+      # Round-trip the binary seed into a tarball to properly show we could
+      # publish the tarball independent from Nixpkgs.
+      #
+      # NOTE: archive needs to be built in advance for the `file://` to resolve.
+      #       fetchTarball can't depend on Nix-built inputs.
+      #
+      # ```
+      # nix-build ./binary-seed.nix -A archive
+      # ```
+      builtins.fetchTarball {
+        url = builtins.unsafeDiscardStringContext "file://${toString seed'.archive}";
+      }
+    else
+      # For development purpose, depend directly on the seed before packing into an archive.
+      seed'
+  ;
 in
 derivation {
   inherit seed;
