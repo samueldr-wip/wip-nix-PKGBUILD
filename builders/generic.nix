@@ -173,6 +173,15 @@ derivation ({
           exit 2
         fi
 
+        echo "Adding misc. configuration for the build environment."
+        (
+        cat >> root/etc/profile <<EOF
+        export SOURCE_DATE_EPOCH="$SOURCE_DATE_EPOCH"
+        export REPRODUCIBLE=1
+        export PAGER=cat
+        EOF
+        )
+
         ${buildPhase}
 
       '')
