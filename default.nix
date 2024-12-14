@@ -25,6 +25,18 @@ rec {
     reverse (builtins.map (desc: repo.fetchPackage { inherit desc; }) baseDevel)
   ;
 
+  sources = {
+    hello = fetchSourcePackage {
+      name = "hello";
+      packageSource = builtins.fetchGit {
+        url = "https://aur.archlinux.org/hello.git/";
+        rev = "51cec6333515471681ec8aa00943145d420311fa";
+        allRefs = true;
+      };
+      hash = "sha256-cBbqxEWqPbbfpxCyweLw4ykTSbw1czG7HBi9LGfYg/w=";
+    };
+  };
+
   packages = {
     hello = buildPKGBUILD {
       name = "hello";
