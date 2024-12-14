@@ -104,7 +104,7 @@ derivation ({
         # This can be used to force globs to happen within the chrooted environment.
         _chrooted_sh() {
           # NOTE: NOT SAFE regarding expansion. Mind your escapes.
-          printf "PS4='[chrooted] # '; set -x; %s" "$*" | \
+          printf "PS4='[chrooted] # '; . /etc/profile; set -x; %s" "$*" | \
             _chrooted "sh"
         }
 
