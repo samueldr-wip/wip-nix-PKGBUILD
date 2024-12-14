@@ -23,7 +23,7 @@ rec {
     packageNames:
     with import ./archlinux.lib.tests.nix {};
     let
-      packages = (_tests.packages ../repos [ "core" "extra" ]);
+      packages = (_tests.packages repos [ "core" "extra" ]);
       baseDevel = db.allDepsForPackageNames { inherit packages; names = packageNames; };
     in
     reverse (builtins.map (desc: repo.fetchPackage { inherit desc; }) baseDevel)
