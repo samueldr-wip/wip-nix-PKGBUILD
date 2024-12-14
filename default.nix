@@ -39,7 +39,7 @@ rec {
         rev = "51cec6333515471681ec8aa00943145d420311fa";
         allRefs = true;
       };
-      hash = "sha256-cBbqxEWqPbbfpxCyweLw4ykTSbw1czG7HBi9LGfYg/w=";
+      hash = "sha256-w7ooY4tcM1CUhGW3QgB0CiRFvuGRg46kmOBJJUQ+IW0=";
     };
     grep = fetchSourcePackage {
       name = "grep";
@@ -48,7 +48,7 @@ rec {
         rev = "985c5491d2b33e0f38543133e89171a804e56fc3";
         allRefs = true;
       };
-      hash = "sha256-AbR7yMiAB4G6/mUos6W+uIbGnHG+WHFl3ISlMuk+yf0=";
+      hash = "sha256-sZ0AICPEYGZ5tf1AnXztE3fO+M/ilwGzjJzJrf3aNBM=";
     };
   };
 
