@@ -33,6 +33,8 @@ rec
     []
   ;
 
+  firstChar = str: builtins.head (builtins.match "^(.).*" str);
+
   mergeDeep' = mergeOperations: first: second:
     first // second //
     (
