@@ -1,10 +1,12 @@
-{ seed
+{ seed }:
+
+{ name
 , basePackageSet
 , packageSource
 }:
 
 derivation {
-  name = "test";
+  inherit name;
   system = "x86_64-linux";
   builder = "${seed}/bin/ash";
   PATH = "${seed}/bin/";
