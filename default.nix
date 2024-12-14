@@ -1,6 +1,10 @@
 rec {
   seed = import ./seed.nix { };
 
+  repos = import ./repos.nix {
+    inherit seed;
+  };
+
   buildPKGBUILD = import ./builders/buildPKGBUILD.nix {
       inherit seed;
   };
