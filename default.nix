@@ -55,7 +55,7 @@ rec {
     grep = buildPKGBUILD {
       name = "grep";
       basePackageSet = withPackages [ "base" "base-devel" ];
-      packageSource = ./grep-3.11-1.src.tar.gz;
+      packageSource = sources.grep;
     };
   };
 }
