@@ -2,16 +2,15 @@
 
 { name
 , basePackageSet
-, packageSource
+, buildPhase
+, derivationAttributes ? {}
 }:
 
-derivation {
+derivation ({
   inherit name;
   system = "x86_64-linux";
   builder = "${seed}/bin/ash";
   PATH = "${seed}/bin/";
-
-  inherit packageSource;
 
   archiveUnpacker =
     ''
@@ -35,7 +34,7 @@ derivation {
 
   args =
     [
-      (builtins.toFile "test.sh" ''
+      (builtins.toFile "builder.sh" ''
         set -e
         set -u
         PS4=" $ "
@@ -169,28 +168,9 @@ derivation {
           exit 2
         fi
 
-        _banner "Building $(basename ''${packageSource})"
-
-        # TODO: find a solution not requiring this workaround...
-        echo "Applying a workaround in makepkg..."
-        (
-        set -x
-        sed -i "s;\bEUID\b;1;" root/usr/bin/makepkg
-        )
-
-        echo ""
-        (
-        set -x
-        mkdir -p root/package
-        tar --strip-components 1 -C root/package/ -xf "$packageSource"
-        CHROOTED_INITDIR="/package"
-        _chrooted_sh 'export PAGER=cat; makepkg --skippgpcheck'
-        )
-
-        mkdir -p $out
-        cp -v -t $out/ root/package/*.pkg.tar*
+        ${buildPhase}
 
       '')
     ]
   ;
-}
+} // derivationAttributes)

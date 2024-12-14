@@ -1,7 +1,7 @@
 rec {
   seed = import ./seed.nix { };
 
-  buildPKGBUILD = import ./buildPKGBUILD.nix {
+  buildPKGBUILD = import ./builders/buildPKGBUILD.nix {
       inherit seed;
   };
 
