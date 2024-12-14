@@ -50,7 +50,7 @@ rec {
     hello = buildPKGBUILD {
       name = "hello";
       basePackageSet = withPackages [ "base" "base-devel" ];
-      packageSource = ./hello-2.12.1-2.src.tar.gz;
+      packageSource = sources.hello;
     };
     grep = buildPKGBUILD {
       name = "grep";
