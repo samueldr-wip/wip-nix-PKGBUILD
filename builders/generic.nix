@@ -30,6 +30,10 @@ derivation ({
     )
   ;
 
+  # Thu Jan 01 2015 00:00:00 GMT+0000
+  # Arbitrary non-zero epoch.
+  SOURCE_DATE_EPOCH = "1420070400";
+
   passAsFile = [ "archiveUnpacker" ];
 
   args =
