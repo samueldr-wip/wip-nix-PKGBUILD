@@ -57,6 +57,7 @@ derivation ({
         __bwrap() {
           ARGS=""
           ARGS="$ARGS --unshare-all"
+          ARGS="$ARGS --share-net"
           ARGS="$ARGS --chdir ''${CHROOTED_INITDIR:-/}"
 
           ARGS="$ARGS --bind     $PWD/root    /"
