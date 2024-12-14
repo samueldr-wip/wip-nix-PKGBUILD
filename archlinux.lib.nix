@@ -148,7 +148,7 @@ rec
     #   path = ./path/to/unpacked/reponame;
     #   /* defaults to the basename of the target path */ repo = "reponame";
     # }
-    all = { path, repo ? builtins.baseNameOf path }:
+    all = { path, repo ? builtins.unsafeDiscardStringContext (builtins.baseNameOf path) }:
       let
         packagesAttrs =
           builtins.listToAttrs (builtins.attrValues (
