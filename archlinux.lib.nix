@@ -319,9 +319,13 @@ rec
   };
 
   repo = {
-    repos = arch: {
-      core = "https://geo.mirror.pkgbuild.com/core/os/${arch}/";
-      extra = "https://geo.mirror.pkgbuild.com/extra/os/${arch}/";
+    repos = { arch, name }: {
+      #core = "https://geo.mirror.pkgbuild.com/core/os/${arch}/";
+      #extra = "https://geo.mirror.pkgbuild.com/extra/os/${arch}/";
+      # Relying on the archlinux packages archive, otherwise it's hard to
+      # reproduce the builds, since inputs disappear eagerly.
+      core  = "https://archive.archlinux.org/packages/${firstChar name}/${name}/";
+      extra = "https://archive.archlinux.org/packages/${firstChar name}/${name}/";
     };
     fetchPackage =
       let _repos = repo.repos; in # Keep the right `repos` ref around to break infrec...
@@ -333,6 +337,7 @@ rec
 
       let
         h = builtins.head;
+        name = h desc.NAME;
         filename = h desc.FILENAME;
         sha256 = h desc.SHA256SUM;
         storeEscape = builtins.replaceStrings [":"] ["__COLON__"];
@@ -341,7 +346,7 @@ rec
         inherit filename;
         file = (builtins.fetchurl {
           name = storeEscape filename;
-          url = (repos arch)."${repo}" + filename;
+          url = (repos { inherit arch name; })."${repo}" + filename;
           inherit sha256;
         });
       }
