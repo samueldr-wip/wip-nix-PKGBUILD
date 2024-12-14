@@ -35,6 +35,15 @@ rec {
       };
       hash = "sha256-cBbqxEWqPbbfpxCyweLw4ykTSbw1czG7HBi9LGfYg/w=";
     };
+    grep = fetchSourcePackage {
+      name = "grep";
+      packageSource = builtins.fetchGit {
+        url = "https://gitlab.archlinux.org/archlinux/packaging/packages/grep";
+        rev = "985c5491d2b33e0f38543133e89171a804e56fc3";
+        allRefs = true;
+      };
+      hash = "sha256-AbR7yMiAB4G6/mUos6W+uIbGnHG+WHFl3ISlMuk+yf0=";
+    };
   };
 
   packages = {
